@@ -164,3 +164,79 @@ example : p ∧ False ↔ False :=
 example : (p → q) → (¬q → ¬p) :=
   -- Literally just flipped function composition!
   fun (h : p → q) (hnq : ¬q) => hnq ∘ h
+
+#check Iff.mp
+#check Iff.mpr
+#check Iff
+#check absurd
+
+def const (x: a) (_: b) : a := x
+
+-- classical theorems
+example : (p → q ∨ r) → ((p → q) ∨ (p → r)) :=
+  fun (h : p → q ∨ r) =>
+    Or.elim (Classical.em p)
+      (Or.elim_comp
+        (Or.intro_left (p -> r) ∘ const)
+        (Or.intro_right (p -> q) ∘ const)
+        ∘
+        h)
+      (fun hnp : (p -> False) => Or.intro_left (p -> r) (False.elim ∘ hnp))
+
+example : ¬(p ∧ q) → ¬p ∨ ¬q :=
+  fun (h : ¬(p ∧ q)) =>
+    Or.elim (Classical.em p)
+      (fun (hp : p) =>
+        Or.elim (Classical.em q)
+          (False.elim ∘ h ∘ And.intro hp)
+          (Or.intro_right (¬p))
+      )
+      (Or.intro_left (¬q))
+
+theorem impl_associativity {a b c : Prop} (f : (a → b) → c) (_ : a) (y : b) : c :=
+  f (const y)
+
+example : ¬(p → q) → p ∧ ¬q :=
+  fun (p_does_not_imply_q : ¬(p → q)) =>
+    Or.elim (Classical.em p)
+      (fun (hp : p) =>
+        let p_implies_not_q := impl_associativity p_does_not_imply_q
+        And.intro hp (p_implies_not_q hp)
+      )
+      (fun (hnp : ¬p) =>
+        let p_implies_q := False.elim ∘ hnp
+        absurd p_implies_q p_does_not_imply_q
+      )
+
+example : (p → q) → (¬p ∨ q) :=
+  fun (h : p → q) =>
+    Or.elim (Classical.em p)
+      (Or.intro_right (¬p) ∘ h)
+      (Or.intro_left q)
+
+example : (¬q → ¬p) → (p → q) :=
+  fun (h : ¬q → ¬p) =>
+    Or.elim (Classical.em q)
+      const
+      (fun (hnq : ¬q) => False.elim ∘ h hnq)
+
+example : p ∨ ¬p :=
+  Classical.em p
+
+example : (((p → q) → p) → p) :=
+  fun (h : (p → q) → p) =>
+    Or.elim (Classical.em p)
+      id
+      (fun (hnp : ¬p) => h (False.elim ∘ hnp))
+
+
+theorem double_implies {a : Prop} (f : a -> a -> b) : a -> b :=
+  fun (h : a) => f h h
+
+-- without classical challenge
+example : ¬(p ↔ ¬p) :=
+  fun (h : p ↔ ¬p) =>
+    let hnp := double_implies h.mp
+    absurd
+      (h.mpr hnp)
+      hnp
