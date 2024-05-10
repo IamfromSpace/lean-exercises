@@ -204,3 +204,28 @@ example (a : α) : (∃ x, r → p x) ↔ (r → ∃ x, p x) :=
   Iff.intro
     lr
     (rl a)
+
+
+example : (∀ x, p x ∧ q x) ↔ (∀ x, p x) ∧ (∀ x, q x) :=
+  let can_split :=
+    λ (h : (x : α) → p x ∧ q x) ↦
+      And.intro
+        (λ (x : α) ↦ (h x).left)
+        (λ (x : α) ↦ (h x).right)
+  let can_combine :=
+    λ (h : ((x : α) → p x) ∧ ((x : α) → q x)) ↦
+      λ (x : α) ↦ And.intro (h.left x) (h.right x)
+
+  Iff.intro
+    can_split
+    can_combine
+
+example : (∀ x, p x → q x) → (∀ x, p x) → (∀ x, q x) :=
+  λ (h₁ : (x : α) → p x → q x) (h₂ : (x : α) → p x) (x : α) ↦
+    (h₁ x) (h₂ x)
+
+example : (∀ x, p x) ∨ (∀ x, q x) → ∀ x, p x ∨ q x :=
+    λ (h₁ : ((x : α) → p x) ∨ ((x : α) → q x)) (x : α) ↦
+      Or.elim h₁
+        (λ h₂ ↦ Or.intro_left (q x) (h₂ x))
+        (λ h₂ ↦ Or.intro_right (p x) (h₂ x))
