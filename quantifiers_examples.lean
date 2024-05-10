@@ -229,3 +229,51 @@ example : (∀ x, p x) ∨ (∀ x, q x) → ∀ x, p x ∨ q x :=
       Or.elim h₁
         (λ h₂ ↦ Or.intro_left (q x) (h₂ x))
         (λ h₂ ↦ Or.intro_right (p x) (h₂ x))
+
+
+example : α → ((∀ _ : α, r) ↔ r) :=
+  λ (x : α) ↦
+    let can_extract :=
+      λ (h : (_ : α) → r) ↦ h x
+    let can_embed :=
+      λ (hr : r) (_ : α) ↦ hr
+
+    Iff.intro
+      can_extract
+      can_embed
+
+example : (∀ x, p x ∨ r) ↔ (∀ x, p x) ∨ r :=
+  let can_extract :=
+    λ (h₁ : (x : α) → p x ∨ r) ↦
+      Or.elim (Classical.em r)
+        (Or.intro_right (∀ x, p x))
+        (λ hnr ↦
+          Or.elim (Classical.em (∀ x, p x))
+            (Or.intro_left r)
+            (absurd (λ (x : α) ↦ Or.elim (h₁ x) id (λ hr ↦ absurd hr hnr)))
+        )
+
+  let can_embed :=
+    λ (h₁ : ((x : α) → p x) ∨ r) (x : α) ↦
+      Or.elim h₁
+        (λ h₂ ↦ Or.intro_left r (h₂ x))
+        (Or.intro_right (p x))
+
+  Iff.intro
+    can_extract
+    can_embed
+
+example : (∀ x, r → p x) ↔ (r → ∀ x, p x) :=
+  let can_extract :=
+    λ (h₁ : (x : α) → r → p x) (hr : r) (x : α) ↦
+      -- is just `flip`
+      h₁ x hr
+
+  let can_embed :=
+    λ (h₁ : r → (x : α) → p x) (x : α) (hr : r) ↦
+      -- is just `flip`
+      h₁ hr x
+
+  Iff.intro
+    can_extract
+    can_embed
