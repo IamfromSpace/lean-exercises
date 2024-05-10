@@ -277,3 +277,31 @@ example : (∀ x, r → p x) ↔ (r → ∀ x, p x) :=
   Iff.intro
     can_extract
     can_embed
+
+
+def even (n : Nat) : Prop :=
+  ∃ m, m * 2 = n
+
+def odd (n : Nat) : Prop :=
+  ∃ m, m * 2 + 1 = n
+
+def prime (n : Nat) : Prop :=
+  ∀ x, ∀ y, ¬(x * y = n)
+
+def infinitely_many_primes : Prop :=
+  ∀ n, ∃ m, prime m ∧ m > n
+
+def Fermat_prime (n : Nat) : Prop :=
+  prime (2 ^ (2 ^ n) + 1)
+
+def infinitely_many_Fermat_primes : Prop :=
+  ∀ n, ∃ m, Fermat_prime m ∧ m > n
+
+def goldbach_conjecture : Prop :=
+  ∀ n, (even n ∧ n > 2) → (∃ x, ∃ y, prime y ∧ prime y ∧ (x + y = n))
+
+def Goldbach's_weak_conjecture : Prop :=
+  ∀ n, (odd n ∧ n > 5) → (∃ x, ∃ y, ∃ z, prime y ∧ prime y ∧ prime z ∧ (x + y + z = n))
+
+def Fermat's_last_theorem : Prop :=
+  ∀ (n : Nat), ∀ a, ∀ b, ∀ c, (n > 2) → ¬(a^n + b^n = c^n)
