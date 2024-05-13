@@ -59,6 +59,50 @@ theorem append_assoc (as bs cs : List α)
     )
     as
 
+/-
+  Eq.rec.{u, u_1}
+    {α : Sort u_1}
+    {a_left : α}
+    {motive : (a : α) → a_left = a → Sort u}
+    (refl : motive a_left (_ : a_left = a_left))
+    {a_right : α}
+    (t : a_left = a_right)
+  : motive a_right t
+-/
+
+theorem trans {α : Type u} {a b c : α} (h₁ : a = b) (h₂ : b = c) : a = c :=
+  Eq.rec
+    (motive := λ x _ ↦ a = x)
+    h₁
+    h₂
+
+theorem myCongrArg.{u} {α β : Sort u} {a b : α} (f : α → β) (h : a = b) : (f a) = (f b) :=
+  Eq.rec
+    (motive := λ x _ ↦ f a = f x)
+    (Eq.refl (f a))
+    h
+
+#check congrFun
+#check congr
+
+theorem myCongrFun.{u, v} {α : Sort u} {β : α → Sort v} {f g : (x : α) → β x} (h : f = g) (a : α) : f a = g a :=
+  Eq.rec
+    (motive := λ x _ ↦ f a = x a)
+    (Eq.refl (f a))
+    h
+
+theorem myCongr.{u, v} {α : Sort u} {β : Sort v} {f₁ f₂ : α → β} {a₁ a₂ : α} (h₁ : f₁ = f₂) (h₂ : a₁ = a₂) : f₁ a₁ = f₂ a₂ :=
+  let ha₁ : f₁ a₁ = f₂ a₁ :=
+    Eq.rec
+      (motive := λ x _ ↦ f₁ a₁ = x a₁)
+      (Eq.refl (f₁ a₁))
+      h₁
+  Eq.rec
+    (motive := λ x _ ↦ f₁ a₁ = f₂ x)
+    ha₁
+    h₂
+
+
 #check List.rec
 
 @[simp] def length.{u} {α : Type u} (as : List α) : Nat :=
