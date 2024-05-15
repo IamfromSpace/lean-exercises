@@ -197,3 +197,89 @@ theorem double_reverse_is_id.{u} {α : Type u} (as : List α) : as = List.revers
         _        = List.reverse (List.reverse (a::as')) := by simp
     )
     as
+
+
+inductive Expr where
+  | const : Nat → Expr
+  | var : Nat → Expr
+  | plus : Expr → Expr → Expr
+  | times : Expr → Expr → Expr
+
+@[simp] def eval (f : Nat → Nat) (e : Expr) : Nat :=
+  match e with
+  | Expr.const n => n
+  | Expr.var n => f n
+  | Expr.plus a b => eval f a + eval f b
+  | Expr.times a b => eval f a * eval f b
+
+@[simp] def simpConst (expr : Expr) : Expr :=
+  match expr with
+    | Expr.plus (Expr.const n₁) (Expr.const n₂)  => Expr.const (n₁ + n₂)
+    | Expr.times (Expr.const n₁) (Expr.const n₂) => Expr.const (n₁ * n₂)
+    | e                                          => e
+
+@[simp] def fuse (expr : Expr) : Expr :=
+  match expr with
+    | Expr.plus a b   => simpConst (Expr.plus (fuse a) (fuse b))
+    | Expr.times a b  => simpConst (Expr.times (fuse a) (fuse b))
+    | e               => e
+
+#check Expr.rec
+#check Expr.casesOn
+
+theorem simpConst_eq (v : Nat → Nat)
+        : ∀ e : Expr, eval v (simpConst e) = eval v e :=
+  λ expr ↦
+    -- There must be a better way, lol
+    match expr with
+      | Expr.plus (Expr.const n₁) (Expr.const n₂)  =>
+          let h1 : n₁ + n₂ = eval v (Expr.plus (Expr.const n₁) (Expr.const n₂)) := by simp
+          let h2 : eval v (Expr.const (n₁ + n₂)) = n₁ + n₂ := by simp
+          let h3 : simpConst (Expr.plus (Expr.const n₁) (Expr.const n₂)) = Expr.const (n₁ + n₂) := by simp
+          -- wrap both sides of h3 in eval, and then just compose
+          Eq.trans (Eq.trans (congrArg (eval v) h3) h2) h1
+      | Expr.plus (Expr.var _) _ =>
+          -- We demonstrate that `simpConst (Expr.plus a b) = Expr.plus a b`, then wrap it in eval
+          congrArg (eval v) (by simp)
+      | Expr.plus (Expr.plus _ _) _ => congrArg (eval v) (by simp)
+      | Expr.plus (Expr.times _ _) _ => congrArg (eval v) (by simp)
+      | Expr.plus (Expr.const _) (Expr.var _) => congrArg (eval v) (by simp)
+      | Expr.plus (Expr.const _) (Expr.plus _ _) => congrArg (eval v) (by simp)
+      | Expr.plus (Expr.const _) (Expr.times _ _) => congrArg (eval v) (by simp)
+      | Expr.times (Expr.const n₁) (Expr.const n₂) =>
+          let h1 : n₁ * n₂ = eval v (Expr.times (Expr.const n₁) (Expr.const n₂)) := by simp
+          let h2 : eval v (Expr.const (n₁ * n₂)) = n₁ * n₂ := by simp
+          let h3 : simpConst (Expr.times (Expr.const n₁) (Expr.const n₂)) = Expr.const (n₁ * n₂) := by simp
+          -- wrap both sides of h3 in eval, and then just compose
+          Eq.trans (Eq.trans (congrArg (eval v) h3) h2) h1
+      | Expr.times (Expr.var _) _ => congrArg (eval v) (by simp)
+      | Expr.times (Expr.plus _ _) _ => congrArg (eval v) (by simp)
+      | Expr.times (Expr.times _ _) _ => congrArg (eval v) (by simp)
+      | Expr.times (Expr.const _) (Expr.var _) => congrArg (eval v) (by simp)
+      | Expr.times (Expr.const _) (Expr.plus _ _) => congrArg (eval v) (by simp)
+      | Expr.times (Expr.const _) (Expr.times _ _) => congrArg (eval v) (by simp)
+      | Expr.const _ => congrArg (eval v) (by simp)
+      | Expr.var _ => congrArg (eval v) (by simp)
+
+theorem fuse_eq (v : Nat → Nat)
+        : ∀ e : Expr, eval v (fuse e) = eval v e :=
+  Expr.rec
+    (motive := λ x ↦ eval v (fuse x) = eval v x)
+    (by simp)
+    (by simp)
+    (λ a b h_a h_b ↦
+      calc (eval v (fuse (Expr.plus a b)))
+        _ = eval v (simpConst (Expr.plus (fuse a) (fuse b))) := by simp
+        _ = eval v (Expr.plus (fuse a) (fuse b)) := by rw [simpConst_eq]
+        _ = eval v (fuse a) + eval v (fuse b) := by simp
+        _ = eval v a + eval v b := by rw [h_a, h_b]
+        _ = eval v (Expr.plus a b) := by simp
+    )
+    (λ a b h_a h_b ↦
+      calc (eval v (fuse (Expr.times a b)))
+        _ = eval v (simpConst (Expr.times (fuse a) (fuse b))) := by simp
+        _ = eval v (Expr.times (fuse a) (fuse b)) := by rw [simpConst_eq]
+        _ = eval v (fuse a) * eval v (fuse b) := by simp
+        _ = eval v a * eval v b := by rw [h_a, h_b]
+        _ = eval v (Expr.times a b) := by simp
+    )
