@@ -140,3 +140,38 @@ theorem mikes_challenge : ∀ (b : Nat), ∀ (n : Nat), b > 0 → (∃ (x : Nat)
           ⟨b * x + 1, h₀⟩
         )
         n
+
+
+def n_plus_1_ne_0 (n : Nat) : n + 1 ≠ 0 :=
+  λ (h₀ : n + 1 = 0) ↦
+    let is_zero (n : Nat) : Prop :=
+      match n with
+        | Nat.zero => False
+        | _ => True
+
+    let h₁ : True = False := congrArg is_zero h₀
+    let h₂ : True → False := h₁.mp
+    h₂ True.intro
+
+
+def n_plus_1_ne_0_simpler (n : Nat) : n + 1 ≠ 0 :=
+  λ (h : n + 1 = 0) ↦
+    -- An automatically generated helper that can distinguish constructors from one another
+    Nat.noConfusion h
+
+
+def six_ne_seven : 6 ≠ 7 :=
+  let seven_less_six_eq_one : 7 - 6 = 1 := by simp [Eq.refl (7 - 6)]
+  let zero_eq_six_less_six : 0 = 6 - 6 := by simp [Eq.refl _]
+
+  λ (h₀ : 6 = 7) ↦
+    let h₁ : 6 - 6 = 7 - 6 := congrArg (λ x ↦ x - 6) h₀
+    let h₂ : 0 = 1 := Eq.trans (Eq.trans zero_eq_six_less_six h₁) seven_less_six_eq_one
+    n_plus_1_ne_0 0 (Eq.symm h₂)
+
+
+def four_five_six_ne_four_five_seven : [4,5,6] ≠ [4,5,7] :=
+  λ h₀ ↦
+    let h₁ : [6] = [7] := congrArg (λ x ↦ List.tail! (List.tail! x)) h₀
+    let h₂ : 6 = 7 := congrArg (λ x ↦ List.head! x) h₁
+    six_ne_seven h₂
